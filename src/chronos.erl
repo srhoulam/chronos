@@ -36,13 +36,16 @@
 %%% API
 %%%===================================================================
 
--spec register_action(FromName, Timestamp) -> any() when
+-spec register_action(FromName, Timestamp) -> ChronosReference when
       Timestamp :: {non_neg_integer(), non_neg_integer(), non_neg_integer()},
-      FromName :: atom().
+      FromName :: atom(),
+      ChronosReference :: binary().
 register_action(FromName, CompletionTimestamp) ->
     gen_server:call(?MODULE, {register, FromName, CompletionTimestamp}).
 
--spec deregister_action(binary()) -> any().
+-spec deregister_action(binary()) -> Result when
+      Result :: ok | {error, Reason},
+      Reason :: ref_not_found.
 deregister_action(Reference) ->
     gen_server:call(?MODULE, {deregister, Reference}).
 
@@ -198,7 +201,7 @@ handle_call({deregister, Reference}, _From, #state{ next_ref = CurrReference }=S
 
             {reply, ok, NewState};
         error ->
-            {reply, ref_not_found, State}
+            {reply, {error, ref_not_found}, State}
     end;
 
 handle_call({deregister, Reference}, _From, State) ->
@@ -211,7 +214,7 @@ handle_call({deregister, Reference}, _From, State) ->
                                   },
             {reply, ok, NewState};
         error ->
-            {reply, ref_not_found, State}
+            {reply, {error, ref_not_found}, State}
     end;
 
 handle_call(_Request, _From, State) ->
