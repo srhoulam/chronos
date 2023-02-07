@@ -36,7 +36,7 @@
 %%% API
 %%%===================================================================
 
--spec register_action(FromName, Timestamp) -> ChronosReference when
+-spec register_action(FromName, Timestamp) -> {ok, ChronosReference} when
       Timestamp :: {non_neg_integer(), non_neg_integer(), non_neg_integer()},
       FromName :: atom(),
       ChronosReference :: binary().
