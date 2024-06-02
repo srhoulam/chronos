@@ -69,11 +69,7 @@ end_per_group(_GroupName, _Config) ->
 %%--------------------------------------------------------------------
 init_per_testcase(TestCase, Config)
   when TestCase =:= case_main_complex; TestCase =:= case_main_simple ->
-    process_flag(trap_exit, true),
-    StartTs = erlang:timestamp(),
-    ChronosStateFile =
-        io_lib:format("/tmp/chronos.test.~B.~B.~B.erl", tuple_to_list(StartTs)),
-    chronos:start_link([ChronosStateFile]),
+    application:start(chronos),
     Config;
 init_per_testcase(_TestCase, Config) ->
     Config.
@@ -88,8 +84,7 @@ init_per_testcase(_TestCase, Config) ->
 %%--------------------------------------------------------------------
 end_per_testcase(TestCase, _Config)
   when TestCase =:= case_main_complex; TestCase =:= case_main_simple ->
-    gen_server:stop(chronos),
-    receive {'EXIT', _, _} -> ok end;
+    application:stop(chronos);
 end_per_testcase(_TestCase, _Config) ->
     ok.
 
@@ -188,12 +183,11 @@ case_main_complex(_Config) ->
 case_persistence() ->
     ["A test of Chronos persistence across restarts."].
 case_persistence(_Config) ->
-    process_flag(trap_exit, true),
-
     StartTs = erlang:timestamp(),
     ChronosStateFile =
         io_lib:format("/tmp/chronos.test.~B.~B.~B.erl", tuple_to_list(StartTs)),
-    chronos:start_link([ChronosStateFile]),
+    os:putenv("CHRONOS_PERSIST_FILEPATH", ChronosStateFile),
+    application:start(chronos),
     register(test, self()),
 
     {Mega, Secs, Micro} = erlang:timestamp(),
@@ -202,10 +196,9 @@ case_persistence(_Config) ->
     {ok, Ref2} = chronos:register_action(test, {Mega, Secs + 4, Micro}),
     {ok, Ref3} = chronos:register_action(test, {Mega, Secs + 6, Micro}),
     {ok, Ref4} = chronos:register_action(test, {Mega, Secs + 8, Micro}),
+    application:stop(chronos),
 
-    gen_server:stop(chronos),
-    receive {'EXIT', _, _} -> ok end,
-    chronos:start_link([ChronosStateFile]),
+    application:start(chronos),
     receive
         {chronos_timeout, Ref0} -> ok
     end,
@@ -231,13 +224,11 @@ case_persistence(_Config) ->
     end,
     unregister(test),
     receive
-        {chronos_timeout, _} -> exit("Third timeout received from Chronos.")
+        {chronos_timeout, _} -> exit("Extraneous timeout received from Chronos.")
     after
         1000 -> ok
     end,
-
-    gen_server:stop(chronos),
-    receive {'EXIT', _, _} -> ok end.
+    application:stop(chronos).
 
 
 %%--------------------------------------------------------------------

@@ -1,13 +1,14 @@
 {application, chronos,
  [{description, "A timeout management server."},
-  {vsn, "0.2.0"},
-  {registered, []},
+  {vsn, "0.3.0"},
+  {mod, {chronos, []}},
+  {registered, [chronos_server, chronos_sup]},
   {applications,
    [kernel,
     stdlib
    ]},
   {env,[]},
-  {modules, [chronos]},
+  {modules, [chronos_server, chronos_sup, chronos]},
 
   {licenses, ["MIT"]},
   {links, []}
